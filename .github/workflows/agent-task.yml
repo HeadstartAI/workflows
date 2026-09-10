@@ -1,0 +1,79 @@
+name: Agent Task - Reusable
+
+on:
+  workflow_call:
+    inputs:
+      prompt:
+        required: true
+        type: string
+      correlation_id:
+        required: true
+        type: string
+      extra_allowed_tools:
+        required: false
+        type: string
+        default: ""
+      anthropic_federation_rule_id:
+        required: true
+        type: string
+      anthropic_organization_id:
+        required: true
+        type: string
+
+jobs:
+  run-agent:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+      - name: Get plugin marketplace token
+        id: marketplace_auth
+        run: |
+          set -euo pipefail
+          OIDC_TOKEN=$(curl -sS -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=agent-bridge-relay" | jq -r '.value')
+          echo "::add-mask::${OIDC_TOKEN}"
+          RESPONSE=$(curl -sS -w '\n%{http_code}' -X POST https://agent-bridge-relay.onrender.com/oidc/token \
+            -H "Authorization: Bearer ${OIDC_TOKEN}")
+          HTTP_STATUS=$(echo "${RESPONSE}" | tail -n1)
+          BODY=$(echo "${RESPONSE}" | sed '$d')
+          if [ "${HTTP_STATUS}" != "200" ]; then
+            echo "Failed to obtain marketplace token (HTTP ${HTTP_STATUS}): ${BODY}" >&2
+            exit 1
+          fi
+          MARKETPLACE_TOKEN=$(echo "${BODY}" | jq -r '.token')
+          if [ -z "${MARKETPLACE_TOKEN}" ] || [ "${MARKETPLACE_TOKEN}" = "null" ]; then
+            echo "Marketplace token response missing 'token' field: ${BODY}" >&2
+            exit 1
+          fi
+          echo "::add-mask::${MARKETPLACE_TOKEN}"
+          echo "token=${MARKETPLACE_TOKEN}" >> "$GITHUB_OUTPUT"
+
+      - uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          anthropic_federation_rule_id: ${{ inputs.anthropic_federation_rule_id }}
+          anthropic_organization_id: ${{ inputs.anthropic_organization_id }}
+          plugin_marketplaces: "https://x-access-token:${{ steps.marketplace_auth.outputs.token }}@github.com/HeadstartAI/plugin-marketplace.git"
+          plugins: ""
+          prompt: ${{ inputs.prompt }}
+          show_full_output: true
+          claude_args: |
+            --model claude-sonnet-5
+            --allowedTools "Read,Skill,Glob,Grep,LSP,WebFetch,WebSearch,Write,Edit,Bash(git:*),Bash(gh pr:*),Bash(jq:*)${{ inputs.extra_allowed_tools != '' && format(',{0}', inputs.extra_allowed_tools) || '' }}"
+            --disallowedTools "ScheduleWakeup"
+            --append-system-prompt "You are running as a one-shot GitHub Actions job. There is no future turn, resumption, or wakeup — once you finish responding, this process ends permanently."
+      - name: Upload agent result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-result-${{ inputs.correlation_id }}
+          path: /home/runner/work/_temp/claude-execution-output.json
+          retention-days: 7
