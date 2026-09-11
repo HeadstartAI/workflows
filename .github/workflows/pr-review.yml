@@ -82,3 +82,5 @@ jobs:
           claude_args: |
             --model claude-opus-5
             --allowedTools "Read,Skill,Glob,Grep,LSP,WebFetch,WebSearch,Bash(git:*),Bash(jq:*),Bash(gh pr comment:*),Bash(gh pr view:*),mcp__github_inline_comment__create_inline_comment${{ inputs.extra_allowed_tools != '' && format(',{0}', inputs.extra_allowed_tools) || '' }}"
+            --disallowedTools "ScheduleWakeup"
+            --append-system-prompt "You are running as a one-shot GitHub Actions job. There is no future turn, resumption, or wakeup — once you finish responding, this process ends permanently. You must complete the entire review and post it to GitHub within this single run. Never end your turn while waiting on a subagent (e.g. the validator) to finish; wait for it synchronously and then post the results before stopping."
