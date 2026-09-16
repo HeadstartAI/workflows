@@ -7,12 +7,14 @@ on:
         required: false
         type: string
         default: >-
-          /pr-review-loop edit_mode: review_only. After completing the
+          /pr-review-loop edit_mode: review_only, reply_tone: readable — write like a teammate leaving a review comment, not a formal audit report. 1-4 sentences, plain prose, first person is fine, contractions are fine, only use headers/bold/bullet-lists/severity-tags if they actually help organize the info, not by default. After completing the
           review, you must post the results to the PR itself: use
           mcp__github_inline_comment__create_inline_comment for each
-          line-specific finding, and post an overall summary comment via
-          `gh pr comment` (Bash). Do not just report findings in your final
-          response — they must be posted to GitHub.
+          line-specific finding. If there are no findings to report, post a
+          short "approved" style comment via `gh pr comment` (Bash) instead —
+          otherwise do not post an overall summary comment. Do not just
+          report findings in your final response — they must be posted to
+          GitHub.
       extra_allowed_tools:
         required: false
         type: string
