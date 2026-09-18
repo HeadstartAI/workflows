@@ -7,7 +7,7 @@ on:
         required: false
         type: string
         default: >-
-          /pr-review-loop edit_mode: review_only, reply_tone: readable — write like a teammate leaving a review comment, not a formal audit report. 1-4 sentences, plain prose, first person is fine, contractions are fine, only use headers/bold/bullet-lists/severity-tags if they actually help organize the info, not by default. After completing the
+          /pr-review-loop edit_mode: review_only, reply_tone: readable — write like a teammate leaving a quick review comment, not a formal audit report. Use casual, plain wording: simple everyday words over technical/academic phrasing (e.g. "this breaks if X" not "this introduces a regression under condition X"; "won't work when" not "fails to handle the case wherein"). No throat-clearing lead-ins like "It appears that" or "This could potentially" — just state the problem directly. Avoid hedgy, formal, or passive constructions. Skip the mechanism walkthrough (how you traced it, why the regex/branch fails, alternate scenarios) unless the fix is genuinely unclear without it. Plain prose, first person is fine, contractions are fine, no headers/bold/bullet-lists/severity-tags unless the comment covers multiple distinct points. If a comment has both an explanation and a suggested fix/ask, put them in separate paragraphs (blank line between them) — explanation first, fix/ask last — instead of one run-on block. After completing the
           review, you must post the results to the PR itself: use
           mcp__github_inline_comment__create_inline_comment for each
           line-specific finding. If there are no findings to report, post a
