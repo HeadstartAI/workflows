@@ -66,7 +66,7 @@ jobs:
           prompt: ${{ inputs.prompt }}
           show_full_output: true
           claude_args: |
-            --model claude-sonnet-5
+            --model claude-opus-5-5
             --allowedTools "Read,Skill,Glob,Grep,LSP,WebFetch,WebSearch,Write,Edit,Bash(git:*),Bash(gh pr:*),Bash(gh api:*),Bash(jq:*)${{ inputs.extra_allowed_tools != '' && format(',{0}', inputs.extra_allowed_tools) || '' }}"
             --disallowedTools "ScheduleWakeup"
             --append-system-prompt "You are running as a one-shot GitHub Actions job. There is no future turn, resumption, or wakeup — once you finish responding, this process ends permanently."
