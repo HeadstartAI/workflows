@@ -68,7 +68,7 @@ jobs:
           echo "::add-mask::${MARKETPLACE_TOKEN}"
           echo "token=${MARKETPLACE_TOKEN}" >> "$GITHUB_OUTPUT"
 
-      - uses: anthropics/claude-code-action@v1
+      - uses: anthropics/claude-code-action@9ca9355b36297178e28d37c799d1c9c8a28e6507
         with:
           allowed_bots: "*"
           anthropic_federation_rule_id: ${{ inputs.anthropic_federation_rule_id }}
