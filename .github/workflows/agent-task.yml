@@ -111,6 +111,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         with:
+          additional_permissions: |
+            actions: read
           anthropic_federation_rule_id: ${{ inputs.anthropic_federation_rule_id }}
           anthropic_organization_id: ${{ inputs.anthropic_organization_id }}
           plugin_marketplaces: "https://x-access-token:${{ steps.marketplace_auth.outputs.token }}@github.com/HeadstartAI/plugin-marketplace.git"
