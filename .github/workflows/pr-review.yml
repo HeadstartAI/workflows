@@ -28,9 +28,17 @@ on:
 
 jobs:
   review:
+    # Two ways in: a review request on a PR (pull_request), or a "/review"
+    # comment on a PR (issue_comment). Callers filter which comments count.
+    # Comment events carry no pull_request payload, so the fork check for
+    # them happens in the "Resolve PR" step below instead of here. Drafts are
+    # skipped for review requests but allowed for an explicit /review.
     if: >-
-      github.event.pull_request.draft == false &&
-      github.event.pull_request.head.repo.full_name == github.repository
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.draft == false &&
+       github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -38,11 +46,34 @@ jobs:
       id-token: write
       actions: read
     concurrency:
-      group: claude-pr-review-${{ github.event.pull_request.number }}
+      group: claude-pr-review-${{ github.event.pull_request.number || github.event.issue.number }}
       cancel-in-progress: true
     steps:
+      # Comment-triggered runs start on the default branch. Look up the PR's
+      # branch so the review sees the PR's code, and refuse fork PRs: this
+      # run has the repo's secrets, so it must never run fork code.
+      - name: Resolve PR
+        id: pr
+        if: github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          pr_json=$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")
+          head_repo=$(jq -r '.head.repo.full_name // ""' <<< "${pr_json}")
+          head_ref=$(jq -r '.head.ref' <<< "${pr_json}")
+          if [ "${head_repo}" != "${GITHUB_REPOSITORY}" ]; then
+            echo "PR #${PR_NUMBER} comes from a fork (${head_repo:-deleted repo}); not running a review with this repo's secrets." >&2
+            exit 1
+          fi
+          echo "ref=${head_ref}" >> "$GITHUB_OUTPUT"
+
+      # For review requests ref is empty, so checkout keeps its usual
+      # pull_request behaviour.
       - uses: actions/checkout@v6
         with:
+          ref: ${{ steps.pr.outputs.ref }}
           persist-credentials: false
 
       - name: Get plugin marketplace token
