@@ -32,6 +32,9 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 1
+          # Let the Claude action configure git with its own App token so pushes
+          # can trigger CI, rather than retaining the workflow's GITHUB_TOKEN.
+          persist-credentials: false
       - name: Install merge guard
         run: |
           mkdir -p /tmp/agent-task-guard
@@ -108,8 +111,6 @@ jobs:
           echo "token=${MARKETPLACE_TOKEN}" >> "$GITHUB_OUTPUT"
 
       - uses: anthropics/claude-code-action@9ca9355b36297178e28d37c799d1c9c8a28e6507
-        env:
-          GH_TOKEN: ${{ github.token }}
         with:
           additional_permissions: |
             actions: read
